@@ -14,7 +14,7 @@ print(f"{sy.__version__ = }")
 # In[ ]:
 
 
-node = sy.orchestra.launch(name="mnist-domain", dev_mode=True)
+node = sy.login(email='info@openmined.org', password='changethis', port=8081)
 root_client = node.login(email="info@openmined.org", password="changethis")
 
 

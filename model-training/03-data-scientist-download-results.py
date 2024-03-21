@@ -21,7 +21,7 @@ import syft as sy
 # In[ ]:
 
 
-node = sy.orchestra.launch(name="mnist-domain", dev_mode=True)
+node = sy.login(email='info@openmined.org', password='changethis', port=8081)
 ds_client = node.login(email="sheldon@caltech.edu", password="changethis")
 
 

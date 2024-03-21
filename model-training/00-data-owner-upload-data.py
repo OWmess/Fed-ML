@@ -23,8 +23,7 @@ print(f"{sy.__version__ = }")
 # In[27]:
 
 
-node = sy.orchestra.launch(name="mnist-domain", dev_mode=True, reset=True)
-root_client = node.login(email="info@openmined.org", password="changethis")
+root_client = sy.login(email='info@openmined.org', password='changethis', port=8081)
 
 
 # ### Load the MNIST dataset
