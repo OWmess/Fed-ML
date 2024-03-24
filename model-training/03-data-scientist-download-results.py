@@ -45,7 +45,7 @@ training_labels = assets[1]
 # In[ ]:
 
 
-ds_client.code
+print(ds_client.code)
 
 
 # In[ ]:
@@ -66,7 +66,7 @@ train_accs, params = result.get_from(ds_client)
 
 
 assert isinstance(train_accs, list)
-train_accs
+print(train_accs)
 
 
 # In[ ]:
