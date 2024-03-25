@@ -40,7 +40,8 @@ def _one_hot(x, k, dtype=np.float32):
 def mnist_raw():
     """Download and parse the raw MNIST dataset."""
     # CVDF mirror of http://yann.lecun.com/exdb/mnist/
-    base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
+    # google storage: https://storage.googleapis.com/cvdf-datasets/mnist/
+    base_url = "http://yann.lecun.com/exdb/mnist/"
 
     def parse_labels(filename):
         with gzip.open(filename, "rb") as fh:

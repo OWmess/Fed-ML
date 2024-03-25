@@ -14,7 +14,7 @@ print(f"{sy.__version__ = }")
 # In[ ]:
 
 
-node = sy.login(email='info@openmined.org', password='changethis', port=8081)
+node = sy.login(email='info@openmined.org', password='changethis', port=8081,url=f'http://10.60.67.32:8081')
 root_client = node.login(email="info@openmined.org", password="changethis")
 
 

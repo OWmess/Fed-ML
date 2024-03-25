@@ -23,7 +23,7 @@ print(f"{sy.__version__ = }")
 # In[27]:
 
 
-root_client = sy.login(email='info@openmined.org', password='changethis', port=8081)
+root_client = sy.login(email='info@openmined.org', password='changethis', port=8081,url=f'http://10.60.67.32:8081')
 
 
 # ### Load the MNIST dataset
