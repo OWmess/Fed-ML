@@ -29,7 +29,7 @@ ds_client = node.login(email="sheldon@caltech.edu", password="changethis")
 
 datasets = ds_client.datasets.get_all()
 assert len(datasets) == 1
-datasets
+print(datasets)
 
 
 # In[ ]:
@@ -37,21 +37,20 @@ datasets
 
 assets = datasets[0].assets
 assert len(assets) == 2
-assets
 
 
 # In[ ]:
 
 
 training_images = assets[0]
-training_images
+print(training_images)
 
 
 # In[ ]:
 
 
 training_labels = assets[1]
-training_labels
+print(training_labels)
 
 
 # #### The DS can not access the real data
@@ -77,7 +76,7 @@ plt.imshow(np.reshape(mock_images[0], (28, 28)))
 
 
 mock_images_ptr = training_images.pointer
-mock_images_ptr
+print(mock_images_ptr)
 
 
 # In[ ]:
@@ -91,7 +90,7 @@ type(mock_images_ptr)
 
 mock_labels = training_labels.mock
 mock_labels_ptr = training_labels.pointer
-mock_labels_ptr
+print(mock_labels_ptr)
 
 
 # ## 2. The DS prepare the training code and experiment on the mock data
@@ -221,6 +220,10 @@ jax.tree_map(lambda x: x.shape, params)
     ),
     output_policy=sy.SingleExecutionExactOutput(),
 )
+#三层线性神经网络
+#第一层：全连接层，有1024个神经元，激活函数是ReLU。
+#第二层：全连接层，有1024个神经元，激活函数是ReLU。
+#第三层：全连接层，有10个神经元，用于输出每个数字的预测概率，使用LogSoftmax作为激活函数。
 def mnist_3_linear_layers(mnist_images, mnist_labels):
     # import the packages
     # stdlib

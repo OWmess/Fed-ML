@@ -17,14 +17,12 @@ import syft as sy
 
 print(f"{sy.__version__ = }")
 
-
 # ## 1. Launch the domain, upload the data
 
 # In[27]:
 
 
 root_client = sy.login(email='info@openmined.org', password='changethis', port=8081)
-
 
 # ### Load the MNIST dataset
 
@@ -46,7 +44,7 @@ plt.imshow(train_images[0])
 # In[30]:
 
 
-train_labels[0]
+print(train_labels[0])
 
 
 # In[31]:
@@ -92,14 +90,14 @@ print(f"{train_labels.shape = }")
 
 
 mock_images = np.random.rand(num_samples, 784)
-mock_images.shape
+print(mock_images.shape)
 
 
 # In[37]:
 
 
 mock_labels = np.eye(10)[np.random.choice(10, num_samples)]
-mock_labels.shape
+print(mock_labels.shape)
 
 
 # In[38]:
@@ -206,7 +204,7 @@ assert isinstance(register_result, sy.SyftSuccess)
 
 # ### 📓 Now switch to the [first DS's notebook](./01-data-scientist-submit-code.ipynb)
 
-# In[46]:
+# In[46]:f
 
 
 

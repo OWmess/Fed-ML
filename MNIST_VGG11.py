@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import numpy as np
-
+import syft as sy
 
 def imshow(img):
     img = img / 2 + 0.5     # unnormalize
@@ -55,7 +55,7 @@ class Net(nn.Module):
 
 
 if __name__=='__main__':
-
+    # 转换为tensor类型并归一化
     transform = transforms.Compose(
         [transforms.ToTensor(),
          transforms.Normalize((0.5, ), (0.5, ))])
@@ -70,7 +70,6 @@ if __name__=='__main__':
     testloader = torch.utils.data.DataLoader(testset, batch_size=12,
                                              shuffle=False, num_workers=2)
 
-    trainset
 
 
     classes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -82,6 +81,10 @@ if __name__=='__main__':
     images, labels = next(dataiter)
     images = images[:8]
     labels = labels[:8]
+
+    image0=images[0]
+    print(image0)
+
 
     # show images
     imshow(torchvision.utils.make_grid(images))
@@ -142,12 +145,29 @@ if __name__=='__main__':
 
 
 
+
+    PATH = './mnist_vgg11.pth'
+
     vgg11 = Net()
     vgg11.load_state_dict(torch.load(PATH))
 
     if torch.cuda.is_available():
         vgg11.cuda()
 
+    ### 序列化模型参数测试
+    param=vgg11.state_dict()
+    model_params_np = {k: v.cpu().numpy() for k, v in param.items()}
+    param_sy=sy.serialize(model_params_np)
+
+    decode_param=sy.deserialize(param_sy)
+
+    received_model_params = {k: torch.from_numpy(v) for k, v in decode_param.items()}
+
+    print(set(received_model_params.keys()) == set(param.keys()))
+    for k in received_model_params.keys():
+        print(np.allclose(received_model_params[k].numpy(), param[k].numpy()))
+
+    ################################################################################
 
     dataiter = iter(testloader)
     images, labels = next(dataiter)
