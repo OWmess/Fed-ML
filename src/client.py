@@ -5,6 +5,9 @@ import train_mnist
 import torchvision
 from torchvision.datasets import ImageFolder
 import pandas as pd
+from pympler import asizeof
+import numpy as np
+import time
 def login_client(email, password, port):
     root_client = sy.login(email=email, password=password, port=port)
     return root_client
@@ -34,21 +37,23 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    client=sy.login(email=args.email, password=args.password, port=args.port)
 
     mnist_folder_path = f"../tools/fold_{args.client_num}/"
     train_data = load_mnist(mnist_folder_path)
     model = train_mnist.train_model(train_data,1)
+    #浅拷贝，传引用
     params=model.state_dict()
     if args.save_model:
         torch.save(params, f"mnist_model_{args.client_num}.pth")
 
     # 将模型参数及其形状转为一维Numpy数组
-    numpy_params = {k: v.numpy().flatten() for k, v in params.items()}
-    numpy_shapes = {k: v.shape for k, v in params.items()}
+    shapes = {k: v.shape for k, v in params.items()}
+    params = {k: v.numpy().ravel() for k, v in params.items()}
 
-    df_params = pd.DataFrame.from_dict(numpy_params, orient='index')  # 转为Pandas DataFrame
-    df_shapes = pd.DataFrame.from_dict(numpy_shapes, orient='index')  # 转为Pandas DataFrame
+
+    params = pd.DataFrame.from_dict(params, orient='index')  # 转为Pandas DataFrame
+    shapes = pd.DataFrame.from_dict(shapes, orient='index')  # 转为Pandas DataFrame
+
 
 
     dataset = sy.Dataset(
@@ -58,30 +63,38 @@ if __name__ == "__main__":
     dataset.add_contributor(
         role=sy.roles.UPLOADER,
         name="client_1",
-        email="alice@openmined.com",
+        email="wang.guoxian@foxmail.com",
         note="client_1 mnist param",
     )
-
+    t1 = time.time()
     asset_mnist_param = sy.Asset(
-        name=f"client_{args.client_num}_param",
+        name=f"client_{args.client_num}_params",
         description=f"MNIST param model from client {args.client_num}",
-        data=df_params,
+        data=params,
         mock=sy.ActionObject.empty()
     )
 
     asset_mnist_shapes=sy.Asset(
         name=f"client_{args.client_num}_param_shapes",
         description=f"MNIST model shapes from client {args.client_num}",
-        data=df_shapes,
+        data=shapes,
         mock=sy.ActionObject.empty()
     )
+    print('build asset time: ', time.time() - t1)
 
+    print('params size: ',asizeof.asizeof(params))
+
+    print('shapes size: ',asizeof.asizeof(shapes))
     dataset.add_asset(asset_mnist_param)
     dataset.add_asset(asset_mnist_shapes)
-    upload=client.api.services.dataset.upload_dataset(dataset)
+
+    client = sy.login(email=args.email, password=args.password, port=args.port)
+    assert not isinstance(client, sy.SyftError)
+    upload=client.upload_dataset(dataset)
     print(upload)
-    assert isinstance(upload,sy.SyftError)
-
-
+    assert not isinstance(upload,sy.SyftError)
     datasets=client.api.services.dataset.get_all()
     print(datasets)
+    node = sy.orchestra.launch(
+        name="private-data-example-domain-1", port="auto", reset=True
+    )
