@@ -8,12 +8,12 @@ import torchvision.transforms as transforms
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.conv1 = nn.Conv2d(1, 8, 3, 1)
+        self.conv2 = nn.Conv2d(8, 16, 3, 1)
         self.dropout1 = nn.Dropout(0.25)
         self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
+        self.fc1 = nn.Linear(2304, 32)
+        self.fc2 = nn.Linear(32, 10)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -48,7 +48,14 @@ def train(model,epoch,optimizer,train_loader,device):
                 100. * batch_idx / len(train_loader), loss.item()))
 
 # 定义测试函数
-def test(model,test_loader,device):
+def test(model,device):
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.Grayscale(num_output_channels=1),  # 图片转为单通道（灰度图）
+        torchvision.transforms.ToTensor(),  # PIL Image或者 ndarray 转为tensor，并且做归一化（数据在0~1之间）
+        torchvision.transforms.Normalize((0.1307,), (0.3081,))  # 标准化，（均值，标准差）
+    ])
+    test_set = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=1000, shuffle=False)
     model.eval()
     test_loss = 0
     correct = 0
@@ -65,23 +72,19 @@ def test(model,test_loader,device):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
-def train_model(train_loader,epochs=1):
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.Grayscale(num_output_channels=1),  # 图片转为单通道（灰度图）
-        torchvision.transforms.ToTensor(),  # PIL Image或者 ndarray 转为tensor，并且做归一化（数据在0~1之间）
-        torchvision.transforms.Normalize((0.1307,), (0.3081,))  # 标准化，（均值，标准差）
-    ])
-    test_set = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=1000, shuffle=False)
+def train_model(train_loader,epochs=1,model=Net()):
+
+
 
     # 初始化网络和优化器
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Net().to(device)
-    optimizer = optim.Adadelta(model.parameters(), lr=1.0)
+    device = torch.device("cpu")
+    print(f"Using {device}")
+    model = model.to(device)
+    optimizer = optim.RMSprop(model.parameters(), lr=0.001)
 
     for epoch in range(1, epochs + 1):
         train(model,epoch,optimizer,train_loader,device)
-        test(model,test_loader,device)
+        test(model,device)
 
 
     return model
