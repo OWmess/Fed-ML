@@ -8,6 +8,7 @@ import socket
 import pickle
 
 EOT=b'\x7B\x8B\x9B'
+STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
 def load_mnist(path):
     transform = torchvision.transforms.Compose([
         torchvision.transforms.Grayscale(num_output_channels=1),  # 图片转为单通道（灰度图）
@@ -20,6 +21,9 @@ def load_mnist(path):
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True)
 
     return train_loader
+
+
+
 
 
 if __name__ == "__main__":
@@ -35,8 +39,8 @@ if __name__ == "__main__":
     model = train_mnist.train_model(train_data,1)
     #浅拷贝，传引用
     params=model.state_dict()
-    if args.save_model:
-        torch.save(params, f"mnist_model_{args.client_num}.pth")
+    # if args.save_model:
+    #     torch.save(params, f"mnist_model_{args.client_num}.pth")
 
 
     #将模型参数保存到buffer中
@@ -69,6 +73,12 @@ if __name__ == "__main__":
                 print('endswith EOT')
                 data = data[:-len(EOT)]
                 break
+            if data==STOP_CLIENT_EOT:
+                if args.save_model:
+                    torch.save(params, f"mnist_model_{args.client_num}.pth")
+                    print(f'trained MNIST model,save at local as mnist_model_{args.client_num}.pth')
+                exit(0)
+                break
             # 删除终止符
         if data:
             data = pickle.loads(data)
@@ -76,13 +86,14 @@ if __name__ == "__main__":
             buffer = io.BytesIO(new_model)
             model = train_mnist.Net()
             model.load_state_dict(torch.load(buffer))
+            s.close()
 
         model = train_mnist.train_model(train_data, 1,model)
 
         # 浅拷贝，传引用
         params = model.state_dict()
-        if args.save_model:
-            torch.save(params, f"mnist_model_{args.client_num}.pth")
+        # if args.save_model:
+        #     torch.save(params, f"mnist_model_{args.client_num}.pth")
 
         # 将模型参数保存到buffer中
         buffer = io.BytesIO()
@@ -95,11 +106,9 @@ if __name__ == "__main__":
         serialized_struct = pickle.dumps(send_struct)
         serialized_struct += EOT
         # 发送数据
-        try:
-            s.sendall(serialized_struct)
-        except BrokenPipeError as e:
-            s.connect(('localhost', 12345))
-            s.sendall(serialized_struct)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('localhost', 12345))
+        s.sendall(serialized_struct)
 
 
 

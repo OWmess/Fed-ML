@@ -5,15 +5,19 @@ import pickle
 import threading
 import train_mnist
 import time
+import os
 from collections import OrderedDict
 EOT=b'\x7B\x8B\x9B'
-
+STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
+CLIENT_NUM=5
 # 全局字典，用于保存接收到的模型
 models = {}
 clients= {}
+
 # 记录迭代次数
 iteration = 1
-
+success_cnt=0
+exit_flag=False
 def handle_client(conn, addr):
     # 读取数据
     data = b""
@@ -75,7 +79,7 @@ def federated_avg(models):
 
     # 除以模型的数量来获取平均权重
     for key in avg_weights:
-        avg_weights[key] /= 5
+        avg_weights[key] /= CLIENT_NUM
 
     return avg_weights
 
@@ -92,15 +96,18 @@ def send_model(conn, model):
     data_bytes += EOT
     # 发送数据
     conn.sendall(data_bytes)
+    print('Send FedAvg param to client.')
 
-
-
+def stop_work(conn):
+    conn.sendall(STOP_CLIENT_EOT)
+    pass
 
 def check_models():
     global iteration
+    global success_cnt
     while True:
         # 检查models字典是否包含从0到4的所有客户端ID
-        if all(i in models for i in range(5)):
+        if all(i in models for i in range(CLIENT_NUM)):
             print("已经接收到所有客户端（0-4）的模型。")
             avg_weight=federated_avg(models)
             model=train_mnist.Net()
@@ -108,13 +115,21 @@ def check_models():
             device=torch.device("cpu")
             model=model.to(device)
             print(f"第{iteration}轮迭代：")
-            train_mnist.test(model,device)
+            accuracy=train_mnist.test(model,device)
+            if success_cnt >= 3:
+                print('训练完成')
+                for conn in clients.values():
+                    stop_work(conn)
+                os._exit(0)
+            if accuracy > 98:
+                success_cnt+=1
             # 清空models字典
             iteration += 1
             models.clear()
             # 将新的模型权重发送到每个客户端
             for conn in clients.values():
                 send_model(conn, model)
+
             # 关闭所有的连接并清空客户端连接字典
             # for conn in clients.values():
             #     conn.close()
