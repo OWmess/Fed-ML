@@ -9,7 +9,7 @@ import os
 from collections import OrderedDict
 EOT=b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
-CLIENT_NUM=5
+CLIENT_NUM=2
 # 全局字典，用于保存接收到的模型
 models = {}
 clients= {}
@@ -43,7 +43,7 @@ def handle_client(conn, addr):
 
     # 加载模型
     buffer = io.BytesIO(model_bytes)
-    model = train_mnist.Net()
+    model = train_mnist.LeNet()
     model.load_state_dict(torch.load(buffer))
 
     # 打印元数据
@@ -108,16 +108,16 @@ def check_models():
     while True:
         # 检查models字典是否包含从0到4的所有客户端ID
         if all(i in models for i in range(CLIENT_NUM)):
-            print("已经接收到所有客户端（0-4）的模型。")
+            print("Models from all clients have been received.")
             avg_weight=federated_avg(models)
-            model=train_mnist.Net()
+            model=train_mnist.LeNet()
             model.load_state_dict(avg_weight)
             device=torch.device("cpu")
             model=model.to(device)
-            print(f"第{iteration}轮迭代：")
+            print(f"epoch: {iteration}：")
             accuracy=train_mnist.test(model,device)
             if success_cnt >= 3:
-                print('训练完成')
+                print('Training completed.')
                 for conn in clients.values():
                     stop_work(conn)
                 os._exit(0)

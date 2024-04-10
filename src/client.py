@@ -84,7 +84,7 @@ if __name__ == "__main__":
             data = pickle.loads(data)
             new_model = data['model']
             buffer = io.BytesIO(new_model)
-            model = train_mnist.Net()
+            model = train_mnist.LeNet()
             model.load_state_dict(torch.load(buffer))
             s.close()
 

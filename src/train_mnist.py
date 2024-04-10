@@ -5,30 +5,32 @@ import torchvision
 import torchvision.transforms as transforms
 
 # 定义网络结构
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 8, 3, 1)
-        self.conv2 = nn.Conv2d(8, 16, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(2304, 32)
-        self.fc2 = nn.Linear(32, 10)
+# 定义网络结构
+class LeNet(nn.Module):
 
+    def __init__(self):
+        super(LeNet, self).__init__()
+        # 1 input image channel, 6 output channels, 5x5 square convolution
+        # kernel
+        self.conv1 = nn.Conv2d(1, 6, 5)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        # an affine operation: y = Wx + b
+        self.fc1 = nn.Linear(16 * 4 * 4, 120)  # 4*4 from image dimension
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
     def forward(self, x):
-        x = self.conv1(x)
-        x = torch.relu(x)
-        x = self.conv2(x)
-        x = torch.relu(x)
-        x = torch.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = torch.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = torch.log_softmax(x, dim=1)
-        return output
+        # Max pooling over a (2, 2) window
+        x = torch.max_pool2d(torch.relu(self.conv1(x)), (2, 2))
+        # If the size is a square, you can specify with a single number
+        x = torch.max_pool2d(torch.relu(self.conv2(x)), 2)
+        # x = torch.relu(self.conv2(x))
+
+        x = torch.flatten(x, 1) # flatten all dimensions except the batch dimension
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        x = torch.log_softmax(x, dim=1) # 计算log(softmax(x))
+        return x
 
 
 
@@ -55,7 +57,7 @@ def test(model,device):
         torchvision.transforms.Normalize((0.1307,), (0.3081,))  # 标准化，（均值，标准差）
     ])
     test_set = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=1000, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=100, shuffle=False)
     model.eval()
     test_loss = 0
     correct = 0
@@ -73,7 +75,7 @@ def test(model,device):
         100. * correct / len(test_loader.dataset)))
     return 100. * correct / len(test_loader.dataset)
 
-def train_model(train_loader,epochs=1,model=Net()):
+def train_model(train_loader, epochs=1, model=LeNet()):
 
 
 
