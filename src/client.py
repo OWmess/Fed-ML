@@ -76,6 +76,10 @@ if __name__ == "__main__":
             if data==STOP_CLIENT_EOT:
                 if args.save_model:
                     torch.save(params, f"mnist_model_{args.client_num}.pth")
+                    #导出onnx
+                    dummy_input = torch.randn(1, 1, 28, 28)
+                    torch.onnx.export(model, dummy_input, f"mnist_model_{args.client_num}.onnx")
+
                     print(f'trained MNIST model,save at local as mnist_model_{args.client_num}.pth')
                 exit(0)
                 break

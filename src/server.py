@@ -9,7 +9,7 @@ import os
 from collections import OrderedDict
 EOT=b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
-CLIENT_NUM=2
+CLIENT_NUM=1
 # 全局字典，用于保存接收到的模型
 models = {}
 clients= {}
