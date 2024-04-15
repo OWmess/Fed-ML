@@ -6,7 +6,7 @@ from torchvision.datasets import ImageFolder
 import io
 import socket
 import pickle
-
+import os
 EOT=b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
 def load_mnist(path):
@@ -75,12 +75,17 @@ if __name__ == "__main__":
                 break
             if data==STOP_CLIENT_EOT:
                 if args.save_model:
-                    torch.save(params, f"mnist_model_{args.client_num}.pth")
+                    x = torch.rand(1, 1, 28, 28)
+                    mod = torch.jit.trace(model, x)
+                    if not os.path.exists("../models"):
+                        os.makedirs("../models")
+                    mod.save(f"../models/mnist_model_{args.client_num}.pt")
+                    torch.save(params, f"../models/mnist_model_{args.client_num}.pth")
                     #导出onnx
                     dummy_input = torch.randn(1, 1, 28, 28)
-                    torch.onnx.export(model, dummy_input, f"mnist_model_{args.client_num}.onnx")
+                    torch.onnx.export(model, dummy_input, f"../models/mnist_model_{args.client_num}.onnx")
 
-                    print(f'trained MNIST model,save at local as mnist_model_{args.client_num}.pth')
+                    print(f'trained MNIST model,save at models dir')
                 exit(0)
                 break
             # 删除终止符

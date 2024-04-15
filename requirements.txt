@@ -3,3 +3,6 @@ torchvision
 opencv-python
 numpy
 pillow
+onnxruntime
+QtPy
+scikit-image
