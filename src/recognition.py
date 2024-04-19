@@ -8,6 +8,18 @@ import train_mnist
 import time
 import sys
 import os
+from picamera2 import Picamera2
+
+picam2 = Picamera2()
+#init camera
+dispW=1280
+dispH=720
+picam2.preview_configuration.main.size = (dispW,dispH)
+picam2.preview_configuration.main.format = "RGB888"
+picam2.preview_configuration.controls.FrameRate=30
+picam2.preview_configuration.align()
+picam2.configure("preview")
+picam2.start()
 
 
 
@@ -99,14 +111,7 @@ if __name__ == '__main__':
     cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
     exit_cnt=0
     while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Can't receive frame . Retry ...")
-            exit_cnt+=1
-            if exit_cnt>20:
-                os._exit(0)
-            time.sleep(1)
-            continue
+        frame=picam2.capture_array()
 
         key=cv2.waitKey(1)
         if key =='q':
