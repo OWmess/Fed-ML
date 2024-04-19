@@ -29,12 +29,13 @@ def load_mnist(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--client_num", type=int, required=True,help="Client number")
-    parser.add_argument("--save_model", type=bool, required=False,default=False, help="save model or not")
+    parser.add_argument("--mode", type=str, required=False, help="train mode: iid or non-iid,default idd",default="iid")
+    parser.add_argument("--save_model", type=bool, required=False,default=False, help="save model or not,default False")
     args = parser.parse_args()
 
 
 
-    mnist_folder_path = f"../tools/iid/fold_{args.client_num}/"
+    mnist_folder_path = f"../tools/{args.mode}/fold_{args.client_num}/"
     train_data = load_mnist(mnist_folder_path)
     model = train_mnist.train_model(train_data,1)
     #浅拷贝，传引用

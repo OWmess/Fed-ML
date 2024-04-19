@@ -7,6 +7,7 @@ import train_mnist
 import time
 import os
 from collections import OrderedDict
+import visdom
 EOT=b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
 CLIENT_NUM=1
@@ -18,6 +19,10 @@ clients= {}
 iteration = 1
 success_cnt=0
 exit_flag=False
+
+vis=visdom.Visdom()
+
+
 def handle_client(conn, addr):
     # 读取数据
     data = b""
@@ -115,11 +120,16 @@ def check_models():
             device=torch.device("cpu")
             model=model.to(device)
             print(f"epoch: {iteration}：")
-            accuracy=train_mnist.test(model,device)
+            loss,accuracy=train_mnist.test(model,device)
+            vis.line(X=[iteration], Y=[accuracy], win='accuracy', \
+                     update='append' if iteration > 0 else None, opts=dict(title='accuracy'))
+            vis.line(X=[iteration], Y=[loss], win='loss', \
+                        update='append' if iteration > 0 else None, opts=dict(title='loss'))
             if success_cnt >= 3:
                 print('Training completed.')
                 for conn in clients.values():
                     stop_work(conn)
+
                 os._exit(0)
             if accuracy > 98:
                 success_cnt+=1
@@ -129,7 +139,16 @@ def check_models():
             # 将新的模型权重发送到每个客户端
             for conn in clients.values():
                 send_model(conn, model)
-
+            x = torch.rand(1, 1, 28, 28)
+            mod = torch.jit.trace(model, x)
+            if not os.path.exists("../models"):
+                os.makedirs("../models")
+            mod.save(f"../models/mnist_model.pt")
+            params=model.state_dict()
+            torch.save(params, f"../models/mnist_model.pth")
+            # 导出onnx
+            dummy_input = torch.randn(1, 1, 28, 28)
+            torch.onnx.export(model, dummy_input, f"../models/mnist_model.onnx")
             # 关闭所有的连接并清空客户端连接字典
             # for conn in clients.values():
             #     conn.close()
