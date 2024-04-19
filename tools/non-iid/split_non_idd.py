@@ -11,8 +11,10 @@ def save_images(images, labels):
         if not os.path.exists(f"fold_{fold}"):
             os.makedirs(f"fold_{fold}")
     for i, (image, label) in enumerate(zip(images, labels)):
+        if not os.path.exists(f"fold_{folder_map[label.item()]}/{label.item()}"):
+            os.makedirs(f"fold_{folder_map[label.item()]}/{label.item()}")
         im = transforms.ToPILImage()(image)
-        im.save(f"fold_{folder_map[label.item()]}/image_{i}.png")
+        im.save(f"fold_{folder_map[label.item()]}/{label.item()}/image_{i}.png")
 
 
 # 加载MNIST数据集

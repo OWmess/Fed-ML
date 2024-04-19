@@ -8,9 +8,7 @@ import train_mnist
 import time
 import sys
 import os
-# from qtpy.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
-# from qtpy.QtGui import QPixmap,QImage
-# from qtpy import PYQT6_API
+
 
 
 #
@@ -18,7 +16,7 @@ import os
 #     def __init__(self):
 #         super().__init__()
 #         self.setWindowTitle("Image Display UI")
-#         self.setGeometry(300, 300, 800, 450)
+#         self.setGeometry(300, 300, 800, 450)aa
 #
 #         # Create a QWidget and set it as central widget
 #         widget = QWidget(self)
