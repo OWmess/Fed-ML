@@ -12,7 +12,7 @@ from picamera2 import Picamera2
 from tkinter import *
 from PIL import Image, ImageTk
 
-# 使用OpenCV捕获视频
+# 使用picamera捕获视频
 picam2 = Picamera2()
 # init camera
 dispW = 1280
@@ -67,20 +67,39 @@ def softmax(x):
 # 创建一个窗口
 window = Tk()
 
+
+
 # 创建两个标签，用于显示原始图像和处理后的图像
 label1 = Label(window)
 label1.pack(side="left")
 label2 = Label(window)
 label2.pack(side="right")
 
+canvas=Canvas(window)
+rect_start=None
+rect_end=None
+rect=None
+
+def on_mouse_down(event):
+    global rect_start
+    rect_start=[event.x,event.y]
+
+def on_mouse_up(event):
+    global rect_end
+    rect_end=[event.x,event.y]
+    if rect is not None:
+        canvas.delete(rect)
+    rect=canvas.create_rectangle(rect_start[0],rect_start[1],rect_end[0],rect_end[1])
+
+
 def update_frames():
-    frame=picam2.capture_array()
-    frame = cv2.flip(frame, 1)  # 如果需要，可以翻转图像
+    #frame=picam2.capture_array()
+    frame=cv2.imread("../tools/image.bmp")
 
     # 将图像从BGR转换为RGB
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     # 创建一个Image对象并进行缩放
-    frame_image = Image.fromarray(frame_rgb).resize((400, 300), Image.ANTIALIAS)
+    frame_image = Image.fromarray(frame_rgb).resize((640, 384), Image.ANTIALIAS)
     # 创建一个PhotoImage对象，用于在标签上显示图像
     frame_photo = ImageTk.PhotoImage(image=frame_image)
     label1.configure(image=frame_photo)
@@ -94,7 +113,7 @@ def update_frames():
     gray_img=cv2.medianBlur(gray_img, 3)
     thresh_img=cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 2)#自适应二值化
     thresh_img=cv2.bitwise_not(thresh_img)#反转像素
-
+    '''
     #连通域去除噪点
     labels = measure.label(thresh_img, connectivity=2, background=0)
     mask = np.zeros(thresh_img.shape, dtype="uint8")
@@ -107,13 +126,13 @@ def update_frames():
         if numPixels > 50:
             mask = cv2.add(mask, labelMask)
     thresh_img = cv2.bitwise_and(thresh_img, thresh_img, mask=mask)
-
+'''
 
 
     # 创建一个Image对象并进行缩放
-    frame_gray_image = Image.fromarray(thresh_img).resize((400, 300), Image.ANTIALIAS)
+    frame_gray_image = Image.fromarray(thresh_img).resize((640, 384), Image.ANTIALIAS)
     # 创建一个PhotoImage对象，用于在标签上显示图像
-    frame_gray_photo = ImageTk.PhotoImage(image=Image.fromarray(frame_gray_image))
+    frame_gray_photo = ImageTk.PhotoImage(image=frame_gray_image)
     label2.configure(image=frame_gray_photo)
     label2.image = frame_gray_photo
 
