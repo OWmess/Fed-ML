@@ -9,7 +9,20 @@ import time
 import sys
 import os
 from picamera2 import Picamera2
+from tkinter import *
+from PIL import Image, ImageTk
 
+# 使用OpenCV捕获视频
+picam2 = Picamera2()
+# init camera
+dispW = 1280
+dispH = 720
+picam2.preview_configuration.main.size = (dispW, dispH)
+picam2.preview_configuration.main.format = "RGB888"
+picam2.preview_configuration.controls.FrameRate = 30
+picam2.preview_configuration.align()
+picam2.configure("preview")
+picam2.start()
 
 
 
@@ -50,92 +63,68 @@ def softmax(x):
 
 
 
-import sys
-import cv2
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QTimer
 
-class AppWindow(QWidget):
-    def __init__(self):
-        super().__init__()
+# 创建一个窗口
+window = Tk()
 
-        # 使用OpenCV捕获视频
-        self.picam2 = Picamera2()
-        # init camera
-        dispW = 1280
-        dispH = 720
-        self.picam2.preview_configuration.main.size = (dispW, dispH)
-        self.picam2.preview_configuration.main.format = "RGB888"
-        self.picam2.preview_configuration.controls.FrameRate = 30
-        self.picam2.preview_configuration.align()
-        self.picam2.configure("preview")
-        self.picam2.start()
+# 创建两个标签，用于显示原始图像和处理后的图像
+label1 = Label(window)
+label1.pack(side="left")
+label2 = Label(window)
+label2.pack(side="right")
 
-        # 创建一个定时器
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_frames)
+def update_frames():
+    frame=picam2.capture_array()
+    frame = cv2.flip(frame, 1)  # 如果需要，可以翻转图像
 
-        # 创建两个QLabel对象以显示图像
-        self.image_label = QLabel()
-        self.processed_image_label = QLabel()
+    # 将图像从BGR转换为RGB
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # 创建一个Image对象并进行缩放
+    frame_image = Image.fromarray(frame_rgb).resize((400, 300), Image.ANTIALIAS)
+    # 创建一个PhotoImage对象，用于在标签上显示图像
+    frame_photo = ImageTk.PhotoImage(image=frame_image)
+    label1.configure(image=frame_photo)
+    label1.image = frame_photo
 
-        # 创建一个垂直布局并添加QLabel对象
-        layout = QVBoxLayout()
-        layout.addWidget(self.image_label)
-        layout.addWidget(self.processed_image_label)
-        self.setLayout(layout)
+    gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
+    warped_img = frame
 
-        # 启动定时器
-        self.timer.start(30)
+    #中值滤波
+    gray_img=cv2.medianBlur(gray_img, 3)
+    thresh_img=cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 2)#自适应二值化
+    thresh_img=cv2.bitwise_not(thresh_img)#反转像素
 
-    def update_frames(self):
-        frame=self.picam2.capture_array()
-
-        # 将原始帧转换为QImage对象以在QLabel上显示
-        image = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
-        self.image_label.setPixmap(QPixmap.fromImage(image))
-
-        gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray_img = cv2.GaussianBlur(gray_img, (5, 5), 0)
-        warped_img = frame
-
-        #中值滤波
-        gray_img=cv2.medianBlur(gray_img, 3)
-        thresh_img=cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 2)#自适应二值化
-        thresh_img=cv2.bitwise_not(thresh_img)#反转像素
-
-        #连通域去除噪点
-        labels = measure.label(thresh_img, connectivity=2, background=0)
-        mask = np.zeros(thresh_img.shape, dtype="uint8")
-        for label in np.unique(labels):
-            if label == 0:
-                continue
-            labelMask = np.zeros(thresh_img.shape, dtype="uint8")
-            labelMask[labels == label] = 255
-            numPixels = cv2.countNonZero(labelMask)
-            if numPixels > 50:
-                mask = cv2.add(mask, labelMask)
-        thresh_img = cv2.bitwise_and(thresh_img, thresh_img, mask=mask)
-        # 将帧转换为灰度，并将其转换为QImage对象以在QLabel上显示
-        processed_image = thresh_img
-        processed_image = QImage(processed_image, processed_image.shape[1], processed_image.shape[0], QImage.Format_Grayscale8)
-        self.processed_image_label.setPixmap(QPixmap.fromImage(processed_image))
-
-    def closeEvent(self, event):
-        self.cap.release()
-
-def main():
-    app = QApplication(sys.argv)
-    window = AppWindow()
-    window.show()
-    sys.exit(app.exec_())
-
-if __name__ == '__main__':
-    main()
+    #连通域去除噪点
+    labels = measure.label(thresh_img, connectivity=2, background=0)
+    mask = np.zeros(thresh_img.shape, dtype="uint8")
+    for label in np.unique(labels):
+        if label == 0:
+            continue
+        labelMask = np.zeros(thresh_img.shape, dtype="uint8")
+        labelMask[labels == label] = 255
+        numPixels = cv2.countNonZero(labelMask)
+        if numPixels > 50:
+            mask = cv2.add(mask, labelMask)
+    thresh_img = cv2.bitwise_and(thresh_img, thresh_img, mask=mask)
 
 
 
+    # 创建一个Image对象并进行缩放
+    frame_gray_image = Image.fromarray(thresh_img).resize((400, 300), Image.ANTIALIAS)
+    # 创建一个PhotoImage对象，用于在标签上显示图像
+    frame_gray_photo = ImageTk.PhotoImage(image=Image.fromarray(frame_gray_image))
+    label2.configure(image=frame_gray_photo)
+    label2.image = frame_gray_photo
+
+    # 递归调用，每10毫秒更新一次图像
+    window.after(30, update_frames)
+
+# 开始更新图像
+update_frames()
+
+# 启动主循环
+window.mainloop()
 
 
 
