@@ -117,8 +117,8 @@ if __name__ == '__main__':
         # gray_img=cv2.equalizeHist(gray_img)
         warped_img = frame
         #中值滤波
-        gray_img=cv2.medianBlur(gray_img, 3)
-        thresh_img=cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 2)#自适应二值化
+        gray_img=cv2.medianBlur(gray_img, 5)
+        thresh_img=cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)#自适应二值化
         thresh_img=cv2.bitwise_not(thresh_img)#反转像素
 
         if roi_mode:
@@ -131,10 +131,10 @@ if __name__ == '__main__':
                 labelMask = np.zeros(thresh_img.shape, dtype="uint8")
                 labelMask[labels == label] = 255
                 numPixels = cv2.countNonZero(labelMask)
-                if numPixels > 5:
+                if numPixels > 10:
                     mask = cv2.add(mask, labelMask)
             thresh_img = cv2.bitwise_and(thresh_img, thresh_img, mask=mask)
-            kernel = np.ones((3, 3), np.uint8)
+            kernel = np.ones((5, 5), np.uint8)
             thresh_img=cv2.dilate(thresh_img,kernel)
 
         # cv2.namedWindow('Threshold', cv2.WINDOW_NORMAL)
