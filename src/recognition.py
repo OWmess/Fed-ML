@@ -4,7 +4,7 @@ import numpy as np
 from skimage import measure
 import torch
 import onnxruntime
-import train_mnist
+import LeNet5
 import time
 import sys
 import os

@@ -3,14 +3,14 @@ import socket
 import torch
 import pickle
 import threading
-import train_mnist
+import LeNet5
 import time
 import os
 from collections import OrderedDict
 import visdom
 EOT=b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
-CLIENT_NUM=1
+CLIENT_NUM=5
 # 全局字典，用于保存接收到的模型
 models = {}
 clients= {}
@@ -48,7 +48,7 @@ def handle_client(conn, addr):
 
     # 加载模型
     buffer = io.BytesIO(model_bytes)
-    model = train_mnist.LeNet()
+    model = LeNet5.LeNet()
     model.load_state_dict(torch.load(buffer))
 
     # 打印元数据
@@ -63,7 +63,7 @@ def handle_client(conn, addr):
     #     model = models[client_id]
     #     device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
     #     model=model.to(device)
-    #     train_mnist.test(model,device)
+    #     LeNet5.test(model,device)
 
 
 def federated_avg(models):
@@ -115,12 +115,12 @@ def check_models():
         if all(i in models for i in range(CLIENT_NUM)):
             print("Models from all clients have been received.")
             avg_weight=federated_avg(models)
-            model=train_mnist.LeNet()
+            model=LeNet5.LeNet()
             model.load_state_dict(avg_weight)
             device=torch.device("cpu")
             model=model.to(device)
             print(f"epoch: {iteration}：")
-            loss,accuracy=train_mnist.test(model,device)
+            loss,accuracy=LeNet5.test(model,device)
             vis.line(X=[iteration], Y=[accuracy], win='accuracy', \
                      update='append' if iteration > 0 else None, opts=dict(title='accuracy'))
             vis.line(X=[iteration], Y=[loss], win='loss', \
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # 绑定到特定的地址和端口
-    s.bind(('localhost', 12345))
+    s.bind(('10.60.67.222', 12345))
 
     # 开始监听连接
     s.listen(1)

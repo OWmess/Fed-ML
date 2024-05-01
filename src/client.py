@@ -1,14 +1,20 @@
 import argparse
+import io
+import os
+import pickle
+import socket
+
 import torch
-import train_mnist
 import torchvision
 from torchvision.datasets import ImageFolder
-import io
-import socket
-import pickle
-import os
-EOT=b'\x7B\x8B\x9B'
-STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
+
+import LeNet5
+
+EOT = b'\x7B\x8B\x9B'
+STOP_CLIENT_EOT = b'\x0a\x7c\x8b\x9f'
+ip = 'localhost'
+
+
 def load_mnist(path):
     transform = torchvision.transforms.Compose([
         torchvision.transforms.Grayscale(num_output_channels=1),  # 图片转为单通道（灰度图）
@@ -23,47 +29,45 @@ def load_mnist(path):
     return train_loader
 
 
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--client_num", type=int, required=True,help="Client number")
-    parser.add_argument("--mode", type=str, required=False, help="train mode: iid or non-iid,default idd",default="iid")
-    parser.add_argument("--save_model", type=bool, required=False,default=False, help="save model or not,default False")
+    parser.add_argument("--client_num", type=int, required=True, help="Client number")
+    parser.add_argument("--mode", type=str, required=False, help="train mode: iid or non-iid,default idd",
+                        default="iid")
+    parser.add_argument("--save_model", type=bool, required=False, default=False,
+                        help="save model or not,default False")
+    parser.add_argument("--ip", type=str, required=False, default='localhost', help="server ip address")
     args = parser.parse_args()
-
-
+    ip = args.ip
 
     mnist_folder_path = f"../tools/{args.mode}/fold_{args.client_num}/"
     train_data = load_mnist(mnist_folder_path)
-    model = train_mnist.train_model(train_data,1)
-    #浅拷贝，传引用
-    params=model.state_dict()
+    model = LeNet5.train_model(train_data, 1)
+    # 浅拷贝，传引用
+    params = model.state_dict()
     # if args.save_model:
     #     torch.save(params, f"mnist_model_{args.client_num}.pth")
 
-
-    #将模型参数保存到buffer中
+    # 将模型参数保存到buffer中
     buffer = io.BytesIO()
     torch.save(params, buffer)
-    send_struct={
-        'model':buffer.getvalue(),
-        'client_id':args.client_num,
+    send_struct = {
+        'model': buffer.getvalue(),
+        'client_id': args.client_num,
     }
-    #序列化数据
+    # 序列化数据
     serialized_struct = pickle.dumps(send_struct)
-    serialized_struct+= EOT
+    serialized_struct += EOT
     # 创建socket对象
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # 连接到接收端
-    s.connect(('localhost', 12345))
+    s.connect((ip, 12345))
     # 发送数据
     s.sendall(serialized_struct)
     while True:
         # 如果服务端有发送数据，接收新的模型参数并加载到模型中
         print('waiting recv...')
-        data=b""
+        data = b""
         while True:
             packet = s.recv(4096)
             if not packet:
@@ -74,7 +78,7 @@ if __name__ == "__main__":
                 print('endswith EOT')
                 data = data[:-len(EOT)]
                 break
-            if data==STOP_CLIENT_EOT:
+            if data == STOP_CLIENT_EOT:
                 if args.save_model:
                     x = torch.rand(1, 1, 28, 28)
                     mod = torch.jit.trace(model, x)
@@ -82,7 +86,7 @@ if __name__ == "__main__":
                         os.makedirs("../models")
                     mod.save(f"../models/mnist_model_{args.client_num}.pt")
                     torch.save(params, f"../models/mnist_model_{args.client_num}.pth")
-                    #导出onnx
+                    # 导出onnx
                     dummy_input = torch.randn(1, 1, 28, 28)
                     torch.onnx.export(model, dummy_input, f"../models/mnist_model_{args.client_num}.onnx")
 
@@ -94,11 +98,11 @@ if __name__ == "__main__":
             data = pickle.loads(data)
             new_model = data['model']
             buffer = io.BytesIO(new_model)
-            model = train_mnist.LeNet()
+            model = LeNet5.LeNet()
             model.load_state_dict(torch.load(buffer))
             s.close()
 
-        model = train_mnist.train_model(train_data, 1,model)
+        model = LeNet5.train_model(train_data, 1, model)
 
         # 浅拷贝，传引用
         params = model.state_dict()
@@ -117,9 +121,5 @@ if __name__ == "__main__":
         serialized_struct += EOT
         # 发送数据
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(('localhost', 12345))
+        s.connect((ip, 12345))
         s.sendall(serialized_struct)
-
-
-
-
