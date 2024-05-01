@@ -10,7 +10,14 @@ from collections import OrderedDict
 import visdom
 EOT=b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
-CLIENT_NUM=5
+CLIENT_NUM=1
+
+
+# Socket配置
+IP='192.168.3.64'
+PORT=12345
+
+
 # 全局字典，用于保存接收到的模型
 models = {}
 clients= {}
@@ -21,6 +28,24 @@ success_cnt=0
 exit_flag=False
 
 vis=visdom.Visdom()
+classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+# 绘制混淆矩阵
+def plot_confusion_matrix(vis,cm, classes, title='Confusion matrix', cmap='Viridis', win='conf_matrix'):
+    # 绘制热力图
+    vis.heatmap(
+        X=cm,
+        opts=dict(
+            columnnames=classes,
+            rownames=classes,
+            colormap='Hot',
+            title=title,
+            ylabel='True Label',  # 添加纵轴标签
+            xlabel='Predicted Label'  # 添加横轴标签
+        ),
+        win = win  # 使用win参数来指定窗口标识符
+    )
+
+
 
 
 def handle_client(conn, addr):
@@ -33,7 +58,7 @@ def handle_client(conn, addr):
             break
         data += packet
         if data.endswith(EOT):
-            print('endswith EOT')
+            # print('endswith EOT')
             data = data[:-len(EOT)]
             break
         # 删除终止符
@@ -53,6 +78,10 @@ def handle_client(conn, addr):
 
     # 打印元数据
     print('Received model from client {} '.format(client_id))
+    # print('Received model from client {} '.format(client_id+1))
+    # print('Received model from client {} '.format(client_id+2))
+    # print('Received model from client {} '.format(client_id+3))
+    # print('Received model from client {} '.format(client_id+4))
 
     # 保存模型到全局字典
 
@@ -120,11 +149,12 @@ def check_models():
             device=torch.device("cpu")
             model=model.to(device)
             print(f"epoch: {iteration}：")
-            loss,accuracy=LeNet5.test(model,device)
+            loss,accuracy,confusion_matrix=LeNet5.test(model,device)
             vis.line(X=[iteration], Y=[accuracy], win='accuracy', \
                      update='append' if iteration > 0 else None, opts=dict(title='accuracy'))
             vis.line(X=[iteration], Y=[loss], win='loss', \
                         update='append' if iteration > 0 else None, opts=dict(title='loss'))
+            plot_confusion_matrix(vis,confusion_matrix, classes)
             if success_cnt >= 3:
                 print('Training completed.')
                 for conn in clients.values():
@@ -133,6 +163,8 @@ def check_models():
                 os._exit(0)
             if accuracy > 98:
                 success_cnt+=1
+            else :
+                success_cnt=0
             # 清空models字典
             iteration += 1
             models.clear()
@@ -165,7 +197,7 @@ if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # 绑定到特定的地址和端口
-    s.bind(('10.60.67.222', 12345))
+    s.bind((IP, PORT))
 
     # 开始监听连接
     s.listen(1)

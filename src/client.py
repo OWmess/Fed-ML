@@ -75,7 +75,7 @@ if __name__ == "__main__":
                 break
             data += packet
             if data.endswith(EOT):
-                print('endswith EOT')
+                # print('endswith EOT')
                 data = data[:-len(EOT)]
                 break
             if data == STOP_CLIENT_EOT:
