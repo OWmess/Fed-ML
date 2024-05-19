@@ -4,6 +4,7 @@ from skimage import measure
 import torch
 import onnxruntime
 import time
+import matplotlib.pyplot as plt
 
 enable_picamera=True
 try :
@@ -13,26 +14,49 @@ except:
 
 def vertical_projection(image):
     """计算并返回图像的垂直投影"""
-    return np.sum(image, axis=0)
-
-def find_peaks(projection, threshold=5, min_distance=5):
-    """找到投影中的峰值，这些峰值表示可能的字符边界"""
-    peaks = []
-    for i in range(1, len(projection) - 1):
-        if projection[i] > threshold and projection[i] > projection[i - 1] and projection[i] > projection[i + 1]:
-            if not peaks or i - peaks[-1] > min_distance:
-                peaks.append(i)
-    return peaks
+    projection = np.count_nonzero(image == 255, axis=0)
+    return projection
 
 def segment_characters(image, vertical_proj):
     """使用垂直投影分割字符"""
-    peaks = find_peaks(vertical_proj, threshold=np.max(vertical_proj) * 0.2, min_distance=10)
-    characters = []
-    for i in range(len(peaks) - 1):
-        char_img = image[:, peaks[i]:peaks[i+1]]
+    threshold = np.max(vertical_proj) * 0.2
+    lefts = []
+    rights = []
+    is_char = False
+    for i in range(len(vertical_proj)):
+        if vertical_proj[i] > threshold and not is_char:
+            lefts.append(i)
+            is_char = True
+        elif vertical_proj[i] <= threshold and is_char:
+            rights.append(i)
+            is_char = False
+
+    bounds = []  # 保存字符边界
+    for left, right in zip(lefts, rights):
+        char_img = image[:, left:right]
         if char_img.shape[1] > 0:
-            characters.append(char_img)
-    return characters
+            bounds.append((left, right))  # 保存字符的左右边界
+
+    return bounds
+
+def recognize_characters(bounds, image, ort_session, input_name, output_name):
+    """识别字符并返回结果"""
+    results = []
+    for left, right in bounds:
+        char_img = image[:, left:right]
+        char_img = cv2.resize(char_img, (20, 20))
+
+        mnist_digit = np.zeros((28, 28), dtype=np.float32)
+        mnist_digit[4:24, 4:24] = char_img
+        mnist_digit = mnist_digit.reshape(1, 1, 28, 28)
+
+        ort_inputs = {input_name: mnist_digit}
+        ort_outs = ort_session.run([output_name], ort_inputs)
+        pred = np.argmax(ort_outs[0])
+        results.append((left, right, pred))
+
+    return results
+
 
 if enable_picamera:
     picam2 = Picamera2()
@@ -74,9 +98,12 @@ if __name__ == '__main__':
             frame = picam2.capture_array()
         else:
 
-            cap = cv2.VideoCapture(0)
-            cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
-            _,frame=cap.read()
+            # cap = cv2.VideoCapture(0)
+            # cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
+            # _,frame=cap.read()
+            pass
+
+        frame=cv2.imread("../tools/captured_image.jpg")
 
 
         if frame.shape[0] != 720 or frame.shape[1] != 1280:
@@ -86,27 +113,28 @@ if __name__ == '__main__':
             roi_mode = True
         gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray_img = cv2.medianBlur(gray_img, 5)
-        thresh_img = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        thresh_img = cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)#自适应二值化
         thresh_img = cv2.bitwise_not(thresh_img)
-
+        # 膨胀操作
+        kernel = np.ones((3, 3), np.uint8)
+        thresh_img = cv2.dilate(thresh_img, kernel, iterations=3)
         if roi_mode:
             v_proj = vertical_projection(thresh_img)
-            characters = segment_characters(thresh_img, v_proj)
+            plt.bar(range(len(v_proj)), v_proj)
+            plt.show()
+            bounds = segment_characters(thresh_img, v_proj)
 
-            for char in characters:
-                x, y, w, h = cv2.boundingRect(char)
-                digit = char[y:y + h, x:x + w]
-                digit = cv2.resize(digit, (20, 20))
-                mnist_digit = np.zeros((28, 28), dtype=np.float32)
-                mnist_digit[4:24, 4:24] = digit
-                mnist_digit = mnist_digit.reshape(1, 1, 28, 28)
-                output_data = ort_session.run([output_name], {input_name: mnist_digit})[0]
-                prediction = np.argmax(output_data)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(frame, str(prediction), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+            # 识别字符
+            results = recognize_characters(bounds, thresh_img, ort_session, input_name, output_name)
 
+            # 在frame原图像中框选出字符并显示识别结果
+            for left, right, pred in results:
+                cv2.rectangle(frame, (left, 0), (right, frame.shape[0]), (0, 255, 0), 2)
+                cv2.putText(frame, str(pred), (left, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        cv2.namedWindow('thresh', cv2.WINDOW_NORMAL)
+        cv2.imshow('thresh',thresh_img)
         cv2.imshow('image', frame)
-
         key = cv2.waitKey(1)
         # 键盘输入q退出
         if key == ord('q'):

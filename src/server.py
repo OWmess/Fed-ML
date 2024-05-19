@@ -8,29 +8,30 @@ import time
 import os
 from collections import OrderedDict
 import visdom
-EOT=b'\x7B\x8B\x9B'
-STOP_CLIENT_EOT=b'\x0a\x7c\x8b\x9f'
-CLIENT_NUM=1
 
+EOT = b'\x7B\x8B\x9B'
+STOP_CLIENT_EOT = b'\x0a\x7c\x8b\x9f'
+CLIENT_NUM = 1
 
 # Socket配置
-IP='192.168.3.64'
-PORT=12345
-
+IP = 'localhost'
+PORT = 12345
 
 # 全局字典，用于保存接收到的模型
 models = {}
-clients= {}
+clients = {}
 
 # 记录迭代次数
 iteration = 1
-success_cnt=0
-exit_flag=False
+success_cnt = 0
+exit_flag = False
 
-vis=visdom.Visdom()
+vis = visdom.Visdom()
 classes = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+
 # 绘制混淆矩阵
-def plot_confusion_matrix(vis,cm, classes, title='Confusion matrix', cmap='Viridis', win='conf_matrix'):
+def plot_confusion_matrix(vis, cm, classes, title='Confusion matrix', cmap='Viridis', win='conf_matrix'):
     # 绘制热力图
     vis.heatmap(
         X=cm,
@@ -42,10 +43,8 @@ def plot_confusion_matrix(vis,cm, classes, title='Confusion matrix', cmap='Virid
             ylabel='True Label',  # 添加纵轴标签
             xlabel='Predicted Label'  # 添加横轴标签
         ),
-        win = win  # 使用win参数来指定窗口标识符
+        win=win  # 使用win参数来指定窗口标识符
     )
-
-
 
 
 def handle_client(conn, addr):
@@ -62,7 +61,6 @@ def handle_client(conn, addr):
             data = data[:-len(EOT)]
             break
         # 删除终止符
-
 
     # 反序列化数据
     data = pickle.loads(data)
@@ -117,6 +115,7 @@ def federated_avg(models):
 
     return avg_weights
 
+
 def send_model(conn, model):
     # 序列化模型
     buffer = io.BytesIO()
@@ -132,9 +131,11 @@ def send_model(conn, model):
     conn.sendall(data_bytes)
     print('Send FedAvg param to client.')
 
+
 def stop_work(conn):
     conn.sendall(STOP_CLIENT_EOT)
     pass
+
 
 def check_models():
     global iteration
@@ -143,18 +144,18 @@ def check_models():
         # 检查models字典是否包含从0到4的所有客户端ID
         if all(i in models for i in range(CLIENT_NUM)):
             print("Models from all clients have been received.")
-            avg_weight=federated_avg(models)
-            model=LeNet5.LeNet()
+            avg_weight = federated_avg(models)
+            model = LeNet5.LeNet()
             model.load_state_dict(avg_weight)
-            device=torch.device("cpu")
-            model=model.to(device)
+            device = torch.device("cpu")
+            model = model.to(device)
             print(f"epoch: {iteration}：")
-            loss,accuracy,confusion_matrix=LeNet5.test(model,device)
+            loss, accuracy, confusion_matrix = LeNet5.test(model, device)
             vis.line(X=[iteration], Y=[accuracy], win='accuracy', \
                      update='append' if iteration > 0 else None, opts=dict(title='accuracy'))
             vis.line(X=[iteration], Y=[loss], win='loss', \
-                        update='append' if iteration > 0 else None, opts=dict(title='loss'))
-            plot_confusion_matrix(vis,confusion_matrix, classes)
+                     update='append' if iteration > 0 else None, opts=dict(title='loss'))
+            plot_confusion_matrix(vis, confusion_matrix, classes)
             if success_cnt >= 3:
                 print('Training completed.')
                 for conn in clients.values():
@@ -162,9 +163,9 @@ def check_models():
 
                 os._exit(0)
             if accuracy > 98:
-                success_cnt+=1
-            else :
-                success_cnt=0
+                success_cnt += 1
+            else:
+                success_cnt = 0
             # 清空models字典
             iteration += 1
             models.clear()
@@ -176,7 +177,7 @@ def check_models():
             if not os.path.exists("../models"):
                 os.makedirs("../models")
             mod.save(f"../models/mnist_model.pt")
-            params=model.state_dict()
+            params = model.state_dict()
             torch.save(params, f"../models/mnist_model.pth")
             # 导出onnx
             dummy_input = torch.randn(1, 1, 28, 28)
@@ -187,8 +188,6 @@ def check_models():
             clients.clear()
         # 在再次检查之前等待一段时间
         time.sleep(0.5)  # 你可以根据需求调整这个休眠时间
-
-
 
 
 if __name__ == "__main__":
