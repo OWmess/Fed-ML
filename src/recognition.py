@@ -98,12 +98,12 @@ if __name__ == '__main__':
             frame = picam2.capture_array()
         else:
 
-            # cap = cv2.VideoCapture(0)
-            # cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
-            # _,frame=cap.read()
+            cap = cv2.VideoCapture(0)
+            cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
+            _,frame=cap.read()
             pass
 
-        frame=cv2.imread("../tools/captured_image.jpg")
+        # frame=cv2.imread("../tools/captured_image.jpg")
 
 
         if frame.shape[0] != 720 or frame.shape[1] != 1280:
@@ -120,6 +120,7 @@ if __name__ == '__main__':
         thresh_img = cv2.dilate(thresh_img, kernel, iterations=3)
         if roi_mode:
             v_proj = vertical_projection(thresh_img)
+            plt.switch_backend('tkagg')
             plt.bar(range(len(v_proj)), v_proj)
             plt.show()
             bounds = segment_characters(thresh_img, v_proj)
