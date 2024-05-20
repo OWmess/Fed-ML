@@ -85,7 +85,7 @@ def select_roi(event, x, y, flags, param):
         selecting = False
 
 if __name__ == '__main__':
-    ort_session = onnxruntime.InferenceSession("../models/mnist_model_0.onnx")
+    ort_session = onnxruntime.InferenceSession("../models/mnist_model.onnx")
     input_name = ort_session.get_inputs()[0].name
     output_name = ort_session.get_outputs()[0].name
     cv2.namedWindow('image', cv2.WINDOW_NORMAL)

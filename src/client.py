@@ -12,6 +12,8 @@ import LeNet5
 
 EOT = b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT = b'\x0a\x7c\x8b\x9f'
+
+
 ip = 'localhost'
 
 
@@ -42,29 +44,12 @@ if __name__ == "__main__":
 
     mnist_folder_path = f"../tools/{args.mode}/fold_{args.client_num}/"
     train_data = load_mnist(mnist_folder_path)
-    model = LeNet5.train_model(train_data, 1)
-    # 浅拷贝，传引用
-    params = model.state_dict()
-    # if args.save_model:
-    #     torch.save(params, f"mnist_model_{args.client_num}.pth")
-
-    # 将模型参数保存到buffer中
-    buffer = io.BytesIO()
-    torch.save(params, buffer)
-    send_struct = {
-        'model': buffer.getvalue(),
-        'client_id': args.client_num,
-    }
-    # 序列化数据
-    serialized_struct = pickle.dumps(send_struct)
-    serialized_struct += EOT
     # 创建socket对象
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # 连接到接收端
     s.connect((ip, 12345))
-    # 发送数据
-    s.sendall(serialized_struct)
     while True:
+
         # 如果服务端有发送数据，接收新的模型参数并加载到模型中
         print('waiting recv...')
         data = b""
@@ -84,11 +69,11 @@ if __name__ == "__main__":
                     mod = torch.jit.trace(model, x)
                     if not os.path.exists("../models"):
                         os.makedirs("../models")
-                    mod.save(f"../models/mnist_model_{args.client_num}.pt")
-                    torch.save(params, f"../models/mnist_model_{args.client_num}.pth")
+                    mod.save(f"../models/mnist_model.pt")
+                    torch.save(params, f"../models/mnist_model.pth")
                     # 导出onnx
                     dummy_input = torch.randn(1, 1, 28, 28)
-                    torch.onnx.export(model, dummy_input, f"../models/mnist_model_{args.client_num}.onnx")
+                    torch.onnx.export(model, dummy_input, f"../models/mnist_model.onnx")
 
                     print(f'trained MNIST model,save at models dir')
                 exit(0)
@@ -119,7 +104,8 @@ if __name__ == "__main__":
         # 序列化数据
         serialized_struct = pickle.dumps(send_struct)
         serialized_struct += EOT
-        # 发送数据
+        # 创建socket对象
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # 连接到接收端
         s.connect((ip, 12345))
         s.sendall(serialized_struct)

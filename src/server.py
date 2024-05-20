@@ -156,7 +156,7 @@ def check_models():
             vis.line(X=[iteration], Y=[loss], win='loss', \
                      update='append' if iteration > 0 else None, opts=dict(title='loss'))
             plot_confusion_matrix(vis, confusion_matrix, classes)
-            if success_cnt >= 3:
+            if success_cnt >= 3 or iteration>= 30:
                 print('Training completed.')
                 for conn in clients.values():
                     stop_work(conn)
@@ -203,6 +203,18 @@ if __name__ == "__main__":
 
     check_thread = threading.Thread(target=check_models)
     check_thread.start()
+    # 当五个客户端连接时，下发初始化的全局模型
+    model=LeNet5.LeNet()
+    list=[]
+    for _ in range(CLIENT_NUM):
+        conn, addr = s.accept()
+        list.append(conn)
+
+    for conn in list:
+        send_model(conn, model)
+    print('init model send to all clients.')
+    time.sleep(0.1)
+
     # 服务器主循环
     while True:
         # 接受连接
