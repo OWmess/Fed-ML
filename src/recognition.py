@@ -6,18 +6,20 @@ import onnxruntime
 import time
 import matplotlib.pyplot as plt
 
-enable_picamera=True
-SPLIT_THRESH=10
+enable_picamera = True
+SPLIT_THRESH = 10
 
-try :
+try:
     from picamera2 import Picamera2
 except:
-    enable_picamera=False
+    enable_picamera = False
+
 
 def vertical_projection(image):
     """计算并返回图像的垂直投影"""
     projection = np.count_nonzero(image == 255, axis=0)
     return projection
+
 
 def segment_characters(image, vertical_proj):
     """使用垂直投影分割字符"""
@@ -41,6 +43,7 @@ def segment_characters(image, vertical_proj):
 
     return bounds
 
+
 def pad_to_square(image):
     """将图像填充为正方形"""
     height, width = image.shape
@@ -61,10 +64,10 @@ def recognize_characters(bounds, image, ort_session, input_name, output_name):
     for left, right in bounds:
         char_img = image[:, left:right]
         char_img = pad_to_square(char_img)
-        char_img = cv2.resize(char_img, (20, 20))
+        char_img = cv2.resize(char_img, (28, 28))
 
         mnist_digit = np.zeros((28, 28), dtype=np.float32)
-        mnist_digit[4:24, 4:24] = char_img
+        mnist_digit[0:28, 0:28] = char_img
         mnist_digit = mnist_digit.reshape(1, 1, 28, 28)
 
         ort_inputs = {input_name: mnist_digit}
@@ -89,6 +92,7 @@ if enable_picamera:
 roi_pts = []
 selecting = False
 
+
 def select_roi(event, x, y, flags, param):
     global selecting, roi_pts
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -101,6 +105,7 @@ def select_roi(event, x, y, flags, param):
         roi_pts[1:] = [(x, y)]
         selecting = False
 
+
 if __name__ == '__main__':
     ort_session = onnxruntime.InferenceSession("../models/mnist_model.onnx")
     input_name = ort_session.get_inputs()[0].name
@@ -110,7 +115,7 @@ if __name__ == '__main__':
     roi_mode = False
 
     while True:
-        frame=None
+        frame = None
         if enable_picamera:
             frame = picam2.capture_array()
         else:
@@ -122,7 +127,6 @@ if __name__ == '__main__':
 
         # frame=cv2.imread("../tools/captured_image.jpg")
 
-
         if frame.shape[0] != 720 or frame.shape[1] != 1280:
             frame = cv2.resize(frame, (1280, 720))
         if len(roi_pts) == 2 and not selecting:
@@ -130,7 +134,8 @@ if __name__ == '__main__':
             roi_mode = True
         gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray_img = cv2.medianBlur(gray_img, 5)
-        thresh_img = cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)#自适应二值化
+        thresh_img = cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5,
+                                           3)  # 自适应二值化
         thresh_img = cv2.bitwise_not(thresh_img)
         # 膨胀操作
         kernel = np.ones((11, 11), np.uint8)
@@ -162,3 +167,4 @@ if __name__ == '__main__':
             exit(0)
 
     cv2.destroyAllWindows()
+
