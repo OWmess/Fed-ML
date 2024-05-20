@@ -142,5 +142,8 @@ if __name__ == '__main__':
         # 键盘输入q退出
         if key == ord('q'):
             break
+        elif roi_mode:
+            cv2.waitKey()
+            exit(0)
 
     cv2.destroyAllWindows()
