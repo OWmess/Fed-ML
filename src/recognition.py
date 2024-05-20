@@ -41,11 +41,26 @@ def segment_characters(image, vertical_proj):
 
     return bounds
 
+def pad_to_square(image):
+    """将图像填充为正方形"""
+    height, width = image.shape
+    if height > width:
+        pad = (height - width) // 2
+        padded_img = np.pad(image, ((0, 0), (pad, pad)), 'constant', constant_values=0)
+    elif width > height:
+        pad = (width - height) // 2
+        padded_img = np.pad(image, ((pad, pad), (0, 0)), 'constant', constant_values=0)
+    else:
+        padded_img = image
+    return padded_img
+
+
 def recognize_characters(bounds, image, ort_session, input_name, output_name):
     """识别字符并返回结果"""
     results = []
     for left, right in bounds:
         char_img = image[:, left:right]
+        char_img = pad_to_square(char_img)
         char_img = cv2.resize(char_img, (20, 20))
 
         mnist_digit = np.zeros((28, 28), dtype=np.float32)
@@ -105,7 +120,7 @@ if __name__ == '__main__':
             # _,frame=cap.read()
             pass
 
-        frame=cv2.imread("../tools/captured_image.jpg")
+        # frame=cv2.imread("../tools/captured_image.jpg")
 
 
         if frame.shape[0] != 720 or frame.shape[1] != 1280:
