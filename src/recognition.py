@@ -100,12 +100,12 @@ if __name__ == '__main__':
             frame = picam2.capture_array()
         else:
 
-            cap = cv2.VideoCapture(0)
-            cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
-            _,frame=cap.read()
+            # cap = cv2.VideoCapture(0)
+            # cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
+            # _,frame=cap.read()
             pass
 
-        # frame=cv2.imread("../tools/captured_image.jpg")
+        frame=cv2.imread("../tools/captured_image.jpg")
 
 
         if frame.shape[0] != 720 or frame.shape[1] != 1280:
@@ -133,11 +133,11 @@ if __name__ == '__main__':
             # 在frame原图像中框选出字符并显示识别结果
             for left, right, pred in results:
                 cv2.rectangle(frame, (left, 0), (right, frame.shape[0]), (0, 255, 0), 2)
-                cv2.putText(frame, str(pred), (left, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                cv2.putText(frame, str(pred), (left, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 2)
 
-        cv2.namedWindow('thresh', cv2.WINDOW_NORMAL)
-        cv2.imshow('thresh',thresh_img)
-        cv2.imshow('image', frame)
+        # 将frame和thresh_img拼接
+        combined_img = np.hstack((frame, cv2.cvtColor(thresh_img, cv2.COLOR_GRAY2BGR)))
+        cv2.imshow('image', combined_img)
         key = cv2.waitKey(1)
         # 键盘输入q退出
         if key == ord('q'):
