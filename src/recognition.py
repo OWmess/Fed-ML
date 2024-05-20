@@ -118,7 +118,7 @@ if __name__ == '__main__':
         thresh_img = cv2.adaptiveThreshold(gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 3)#自适应二值化
         thresh_img = cv2.bitwise_not(thresh_img)
         # 膨胀操作
-        kernel = np.ones((3, 3), np.uint8)
+        kernel = np.ones((11, 11), np.uint8)
         thresh_img = cv2.dilate(thresh_img, kernel, iterations=3)
         if roi_mode:
             v_proj = vertical_projection(thresh_img)
