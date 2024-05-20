@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument("--client_num", type=int, required=True, help="Client number")
     parser.add_argument("--mode", type=str, required=False, help="train mode: iid or non-iid,default idd",
                         default="iid")
-    parser.add_argument("--save_model", type=bool, required=False, default=False,
+    parser.add_argument("--save_model", type=bool, required=False, default=True,
                         help="save model or not,default False")
     parser.add_argument("--ip", type=str, required=False, default='192.168.28.220', help="server ip address")
     args = parser.parse_args()

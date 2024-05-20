@@ -11,7 +11,7 @@ import visdom
 
 EOT = b'\x7B\x8B\x9B'
 STOP_CLIENT_EOT = b'\x0a\x7c\x8b\x9f'
-CLIENT_NUM = 1
+CLIENT_NUM = 5
 
 # Socket配置
 IP = '192.168.28.220'
