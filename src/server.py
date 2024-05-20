@@ -14,7 +14,7 @@ STOP_CLIENT_EOT = b'\x0a\x7c\x8b\x9f'
 CLIENT_NUM = 1
 
 # Socket配置
-IP = 'localhost'
+IP = '192.168.28.220'
 PORT = 12345
 
 # 全局字典，用于保存接收到的模型

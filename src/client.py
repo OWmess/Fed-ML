@@ -38,7 +38,7 @@ if __name__ == "__main__":
                         default="iid")
     parser.add_argument("--save_model", type=bool, required=False, default=False,
                         help="save model or not,default False")
-    parser.add_argument("--ip", type=str, required=False, default='localhost', help="server ip address")
+    parser.add_argument("--ip", type=str, required=False, default='192.168.28.220', help="server ip address")
     args = parser.parse_args()
     ip = args.ip
 
