@@ -7,6 +7,8 @@ import time
 import matplotlib.pyplot as plt
 
 enable_picamera=True
+SPLIT_THRESH=10
+
 try :
     from picamera2 import Picamera2
 except:
@@ -19,7 +21,7 @@ def vertical_projection(image):
 
 def segment_characters(image, vertical_proj):
     """使用垂直投影分割字符"""
-    threshold = np.max(vertical_proj) * 0.2
+    threshold = SPLIT_THRESH
     lefts = []
     rights = []
     is_char = False
