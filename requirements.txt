@@ -6,3 +6,5 @@ pillow
 onnxruntime
 scikit-image
 scikit-learn
+visdom
+matplotlib

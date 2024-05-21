@@ -5,6 +5,7 @@ import torch
 import onnxruntime
 import time
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 
 enable_picamera = True
 SPLIT_THRESH = 10
@@ -21,9 +22,8 @@ def vertical_projection(image):
     return projection
 
 
-def segment_characters(image, vertical_proj):
+def segment_characters(image, vertical_proj, threshold):
     """使用垂直投影分割字符"""
-    threshold = SPLIT_THRESH
     lefts = []
     rights = []
     is_char = False
@@ -78,6 +78,28 @@ def recognize_characters(bounds, image, ort_session, input_name, output_name):
     return results
 
 
+def vertical_projection_show(vertical_proj):
+    """创建带滑块的垂直投影图"""
+    global SPLIT_THRESH
+
+    def update(val):
+        global SPLIT_THRESH
+        SPLIT_THRESH = slider.val
+        plt.draw()
+
+    plt.switch_backend('tkagg')
+    fig, ax = plt.subplots()
+    plt.subplots_adjust(bottom=0.25)
+    ax.bar(range(len(vertical_proj)), vertical_proj)
+
+    axcolor = 'lightgoldenrodyellow'
+    ax_slider = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
+    slider = Slider(ax_slider, 'Thresh', 0, 255, valinit=SPLIT_THRESH, valstep=1)
+
+    slider.on_changed(update)
+    plt.show()
+
+
 if enable_picamera:
     picam2 = Picamera2()
     dispW = 1280
@@ -119,13 +141,12 @@ if __name__ == '__main__':
         if enable_picamera:
             frame = picam2.capture_array()
         else:
-
             # cap = cv2.VideoCapture(0)
             # cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
             # _,frame=cap.read()
             pass
 
-        # frame=cv2.imread("../tools/captured_image.jpg")
+        frame=cv2.imread("../tools/captured_image.jpg")
 
         if frame.shape[0] != 720 or frame.shape[1] != 1280:
             frame = cv2.resize(frame, (1280, 720))
@@ -142,10 +163,8 @@ if __name__ == '__main__':
         thresh_img = cv2.dilate(thresh_img, kernel, iterations=3)
         if roi_mode:
             v_proj = vertical_projection(thresh_img)
-            plt.switch_backend('tkagg')
-            plt.bar(range(len(v_proj)), v_proj)
-            plt.show()
-            bounds = segment_characters(thresh_img, v_proj)
+            vertical_projection_show(v_proj)
+            bounds = segment_characters(thresh_img, v_proj, SPLIT_THRESH)
 
             # 识别字符
             results = recognize_characters(bounds, thresh_img, ort_session, input_name, output_name)
@@ -167,4 +186,3 @@ if __name__ == '__main__':
             exit(0)
 
     cv2.destroyAllWindows()
-

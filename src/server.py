@@ -6,7 +6,6 @@ import threading
 import LeNet5
 import time
 import os
-from collections import OrderedDict
 import visdom
 
 EOT = b'\x7B\x8B\x9B'
@@ -48,12 +47,13 @@ def plot_confusion_matrix(vis, cm, classes, title='Confusion matrix', cmap='Viri
 
 
 def handle_client(conn, addr):
+    print(f"Connected to client at {addr}")  # 打印连接的客户端地址信息
     # 读取数据
     data = b""
     while True:
         packet = conn.recv(4096)
         if not packet:
-            print('no packet')
+            # print('no packet')
             break
         data += packet
         if data.endswith(EOT):
@@ -129,7 +129,7 @@ def send_model(conn, model):
     data_bytes += EOT
     # 发送数据
     conn.sendall(data_bytes)
-    print('Send FedAvg param to client.')
+
 
 
 def stop_work(conn):
@@ -162,7 +162,7 @@ def check_models():
                     stop_work(conn)
 
                 os._exit(0)
-            if accuracy > 98:
+            if accuracy > 99:
                 success_cnt += 1
             else:
                 success_cnt = 0
@@ -172,6 +172,7 @@ def check_models():
             # 将新的模型权重发送到每个客户端
             for conn in clients.values():
                 send_model(conn, model)
+            print('send new global model param to all clients.')
             x = torch.rand(1, 1, 28, 28)
             mod = torch.jit.trace(model, x)
             if not os.path.exists("../models"):
@@ -208,11 +209,12 @@ if __name__ == "__main__":
     list=[]
     for _ in range(CLIENT_NUM):
         conn, addr = s.accept()
+        print(f"Connected to client at {addr}")  # 打印连接的客户端地址信息
         list.append(conn)
 
     for conn in list:
         send_model(conn, model)
-    print('init model send to all clients.')
+    print('init model param send to all clients.')
     time.sleep(0.1)
 
     # 服务器主循环

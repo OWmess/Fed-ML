@@ -56,7 +56,6 @@ if __name__ == "__main__":
         while True:
             packet = s.recv(4096)
             if not packet:
-                print('no packet')
                 break
             data += packet
             if data.endswith(EOT):
@@ -64,6 +63,7 @@ if __name__ == "__main__":
                 data = data[:-len(EOT)]
                 break
             if data == STOP_CLIENT_EOT:
+                print(f"Client {args.client_num} stop training.")
                 if args.save_model:
                     x = torch.rand(1, 1, 28, 28)
                     mod = torch.jit.trace(model, x)
@@ -80,6 +80,7 @@ if __name__ == "__main__":
                 break
             # 删除终止符
         if data:
+            print('recv global model param from server.')
             data = pickle.loads(data)
             new_model = data['model']
             buffer = io.BytesIO(new_model)
