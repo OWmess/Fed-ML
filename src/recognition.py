@@ -61,20 +61,31 @@ def pad_to_square(image):
 def recognize_characters(bounds, image, ort_session, input_name, output_name):
     """识别字符并返回结果"""
     results = []
+    # 先对bounds进行筛选，若字符长度小于最大字符长度的1/4则删除
+    max_len = max([right - left for left, right in bounds])
+    bounds = [(left, right) for left, right in bounds if right - left > max_len // 4]
+
+
     for left, right in bounds:
         char_img = image[:, left:right]
+        # 寻找最大轮廓
+        contours, _ = cv2.findContours(char_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours = sorted(contours, key=lambda x: cv2.contourArea(x), reverse=True)
+        x, y, w, h = cv2.boundingRect(contours[0])
+        char_img = char_img[y:y + h, x:x + w]
         char_img = pad_to_square(char_img)
-        char_img = cv2.resize(char_img, (28, 28))
+        char_img = cv2.resize(char_img, (20, 20))
 
         mnist_digit = np.zeros((28, 28), dtype=np.float32)
-        mnist_digit[0:28, 0:28] = char_img
+        mnist_digit[4:24, 4:24] = char_img
         mnist_digit = mnist_digit.reshape(1, 1, 28, 28)
 
         ort_inputs = {input_name: mnist_digit}
         ort_outs = ort_session.run([output_name], ort_inputs)
         pred = np.argmax(ort_outs[0])
         results.append((left, right, pred))
-
+        cv2.imshow('digit', mnist_digit[0, 0] * 255)
+        cv2.waitKey()
     return results
 
 
@@ -135,18 +146,20 @@ if __name__ == '__main__':
     cv2.namedWindow('image', cv2.WINDOW_NORMAL)
     cv2.setMouseCallback('image', select_roi)
     roi_mode = False
-
+    cap = None
+    if not enable_picamera:
+        cap = cv2.VideoCapture(-1)
+        cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
     while True:
         frame = None
+
         if enable_picamera:
             frame = picam2.capture_array()
         else:
-            # cap = cv2.VideoCapture(0)
-            # cap.set(6, cv2.VideoWriter.fourcc('M', 'J', 'P', 'G'))
-            # _,frame=cap.read()
+            _ , frame = cap.read()
             pass
 
-        frame=cv2.imread("../tools/captured_image.jpg")
+        # frame=cv2.imread("../tools/captured_image.jpg")
 
         if frame.shape[0] != 720 or frame.shape[1] != 1280:
             frame = cv2.resize(frame, (1280, 720))
