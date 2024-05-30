@@ -66,7 +66,7 @@
    ```bash
    python server.py
    ```
-   服务[器ip需在```server.py```中指明]()
+   服务器ip需在`server.py`中指明
 
 ### 客户端
 
