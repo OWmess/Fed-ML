@@ -60,7 +60,7 @@ if __name__ == "__main__":
             data += packet
             if data.endswith(EOT):
                 # print('endswith EOT')
-                data = data[:-len(EOT)]
+                data = data[:-len(EOT)]# 去掉EOT
                 break
             if data == STOP_CLIENT_EOT:
                 print(f"Client {args.client_num} stop training.")
@@ -78,7 +78,6 @@ if __name__ == "__main__":
                     print(f'trained MNIST model,save at models dir')
                 exit(0)
                 break
-            # 删除终止符
         if data:
             print('recv global model param from server.')
             data = pickle.loads(data)
