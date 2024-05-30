@@ -47,14 +47,14 @@
 ### 训练
 
 <video controls>
-  <source src="./tools/train.mp4" type="video/mp4">
+  <source src="./video/train.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
 ### 识别
 
 <video controls>
-  <source src="./tools/recognition.mp4" type="video/mp4">
+  <source src="./video/recognition.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
