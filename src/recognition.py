@@ -65,7 +65,6 @@ def recognize_characters(bounds, image, ort_session, input_name, output_name):
     max_len = max([right - left for left, right in bounds])
     bounds = [(left, right) for left, right in bounds if right - left > max_len // 4]
 
-
     for left, right in bounds:
         char_img = image[:, left:right]
         # 寻找最大轮廓
