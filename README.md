@@ -8,6 +8,7 @@
 - [使用方法](#使用方法)
   - [服务器](#服务器)
   - [客户端](#客户端)
+  - [数字识别应用](#数字识别应用)
 - [项目结构](#项目结构)
 - [实现细节](#实现细节)
 - [参考文献](#参考文献)
@@ -51,7 +52,7 @@
    ```bash
    python server.py
    ```
-   服务器ip需在```server.py```中指明
+   服务[器ip需在```server.py```中指明]()
 
 ### 客户端
 
@@ -64,6 +65,11 @@
    ```bash
    python client.py --client_num 1 --ip 192.168.28.220
    ```
+### 数字识别应用
+
+```bash
+        python server.py
+```
 
 ## 项目结构
 
@@ -107,9 +113,16 @@ federated-learning-project/
 
 该模块定义了 LeNet-5 模型并提供了训练和测试函数。
 
+### 数字识别应用 (`recognition.py`)
+
+1. **图像处理**：使用 OpenCV 对图像进行预处理，包括灰度化、自适应阈值化、膨胀等操作，以便更好地提取字符。
+2. **字符分割**：通过垂直投影将字符从车牌图像中分割出来。
+3. **字符识别**：使用一个经过训练的神经网络模型（MNIST）对分割出的字符进行识别。
+4. **用户界面**：提供了一个交互式的界面，可以实时显示处理过程，并通过滑块调整字符分割的阈值。
 
 ## 参考文献
 
 - [LeNet-5](http://yann.lecun.com/exdb/lenet/): 一个经典的卷积神经网络架构。
 - [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html): 一种在多个去中心化设备上训练机器学习模型的方法。
 - [Visdom](https://github.com/facebookresearch/visdom): 一个用于实时可视化训练指标的工具。
+
