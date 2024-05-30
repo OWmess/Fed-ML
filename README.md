@@ -43,6 +43,20 @@
    ```bash
    visdom
    ```
+## 视频演示
+### 训练
+
+<video controls>
+  <source src="./tools/train.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+### 识别
+
+<video controls>
+  <source src="./tools/recognition.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## 使用方法
 
